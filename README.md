@@ -64,3 +64,4 @@ Solapi 대시보드 → 메시지 로그 (console.solapi.com/message-log)
 - 2026-02-24: README 추가
 - 2026-02-24: 크론 5분 → 하루1회 (Vercel Hobby 제한)
 - 2026-02-23: 초기 생성
+
