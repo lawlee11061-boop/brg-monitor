@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     
     if (response.ok) {
       const data = await response.json();
-      serverStatus = data.status === 'ok' ? 'UP' : 'DEGRADED';
+      serverStatus = ['ok','healthy','degraded'].includes(data.status) ? 'UP' : 'DOWN';
       serverTs = data.ts;
     } else {
       serverStatus = 'DOWN';

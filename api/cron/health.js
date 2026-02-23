@@ -15,7 +15,7 @@ async function checkHealth() {
     clearTimeout(timeout);
     if (res.ok) {
       const data = await res.json();
-      return { ok: data.status === 'ok', status: res.status, ts: data.ts };
+      return { ok: ['ok','healthy','degraded'].includes(data.status), status: res.status, ts: data.ts };
     }
     return { ok: false, status: res.status, ts: null };
   } catch (e) {
