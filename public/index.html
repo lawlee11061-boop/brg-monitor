@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바른길 서버 상태</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .card { background: #1e293b; border-radius: 16px; padding: 40px; max-width: 420px; width: 90%; box-shadow: 0 25px 50px rgba(0,0,0,0.3); }
+  h1 { font-size: 18px; color: #94a3b8; margin-bottom: 24px; font-weight: 500; }
+  .status { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .dot { width: 16px; height: 16px; border-radius: 50%; }
+  .dot.up { background: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,0.5); }
+  .dot.down { background: #ef4444; box-shadow: 0 0 12px rgba(239,68,68,0.5); animation: pulse 1.5s infinite; }
+  .dot.loading { background: #f59e0b; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }
+  .label { font-size: 28px; font-weight: 700; }
+  .label.up { color: #22c55e; }
+  .label.down { color: #ef4444; }
+  .label.loading { color: #f59e0b; }
+  .details { border-top: 1px solid #334155; padding-top: 16px; }
+  .row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+  .row .k { color: #64748b; }
+  .row .v { color: #cbd5e1; font-family: 'SF Mono', monospace; }
+  .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #475569; }
+  a { color: #60a5fa; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>바른길합동법무사 서버 상태</h1>
+  <div class="status">
+    <div class="dot loading" id="dot"></div>
+    <div class="label loading" id="label">확인 중...</div>
+  </div>
+  <div class="details">
+    <div class="row"><span class="k">서비스</span><span class="v">문서자동화</span></div>
+    <div class="row"><span class="k">응답시간</span><span class="v" id="rt">-</span></div>
+    <div class="row"><span class="k">HTTP</span><span class="v" id="http">-</span></div>
+    <div class="row"><span class="k">확인시각</span><span class="v" id="ts">-</span></div>
+  </div>
+  <div class="footer">
+    <a href="https://doc.brg-law.com" target="_blank">doc.brg-law.com</a> · 60초마다 자동 갱신
+  </div>
+</div>
+<script>
+async function check() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    const up = d.status === 'UP';
+    document.getElementById('dot').className = 'dot ' + (up ? 'up' : 'down');
+    document.getElementById('label').className = 'label ' + (up ? 'up' : 'down');
+    document.getElementById('label').textContent = up ? '정상 운영 중' : '서버 다운';
+    document.getElementById('rt').textContent = d.response_time_ms + 'ms';
+    document.getElementById('http').textContent = d.http_status || '-';
+    document.getElementById('ts').textContent = d.checked_at;
+  } catch(e) {
+    document.getElementById('dot').className = 'dot down';
+    document.getElementById('label').className = 'label down';
+    document.getElementById('label').textContent = '확인 불가';
+  }
+}
+check();
+setInterval(check, 60000);
+</script>
+</body>
+</html>
