@@ -6,10 +6,11 @@ import crypto from 'crypto';
 // 역할: EC2 서버가 완전히 죽었을 때 SMS 알림 발송
 //       (내부 워치독은 EC2와 함께 죽으므로 외부 감시 필요)
 //
-// 알림 형식: "[외부감시] 바른길 서버 다운"
-// 내부 워치독 형식: "🚨 바른길 서버 다운" (deploy/watchdog.py)
+// 판정 기준: HTTP 200 응답 = UP (JSON 파싱 불필요)
+//           그 외 = 3회 재시도 후 DOWN 판정
 //
-// 오탐 방지: 3회 재시도 (5초 간격) 후에도 실패해야 알림 발송
+// 알림 형식: "[외부감시] 바른길 서버 다운"
+// 내부 워치독: "🚨 바른길 서버 다운" (deploy/watchdog.py)
 // ============================================================
 
 const HEALTH_URL = 'https://doc.brg-law.com/health';
@@ -36,10 +37,9 @@ async function checkHealthOnce() {
     clearTimeout(timeout);
     const elapsed = Date.now() - start;
 
+    // HTTP 200~299 = 서버 살아있음. JSON 파싱 실패해도 UP 처리.
     if (res.ok) {
-      const data = await res.json();
-      const ok = ['ok', 'healthy', 'degraded'].includes(data.status);
-      return { ok, status: res.status, elapsed, data };
+      return { ok: true, status: res.status, elapsed };
     }
     return { ok: false, status: res.status, elapsed, error: `HTTP ${res.status}` };
   } catch (e) {
@@ -58,7 +58,6 @@ async function checkHealthWithRetry() {
       return { ok: true, attempts };
     }
 
-    // 마지막 시도가 아니면 대기 후 재시도
     if (i < MAX_RETRIES - 1) {
       await sleep(RETRY_DELAY_MS);
     }
@@ -102,7 +101,6 @@ export default async function handler(req, res) {
   const lastAttempt = result.attempts[result.attempts.length - 1];
 
   if (!result.ok) {
-    // 3회 전부 실패 → 진짜 다운
     const errorDetail = lastAttempt.error || '응답 없음';
     await sendSMS(
       `[외부감시] 바른길 서버 다운\n시각: ${now}\nHTTP: ${lastAttempt.status}\n오류: ${errorDetail}\n재시도: ${result.attempts.length}회 전부 실패\n${DIAG_URL}`
